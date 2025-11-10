@@ -6,9 +6,10 @@ tags:
 categories:
   - lean4
 math: true
+image: lean4.png
 ---
 Lean是一种开源**编程语言**（lean4的4是版本，也有lean3等），
-能用来形式化数学，用代码来表达数学命题和证明，以方便验证证明是否正确，官网 https://lean-lang.org/
+能用来形式化数学，用代码来表达数学命题和证明，以方便验证证明是否正确，官网 https://lean-lang.org/ (博客界面图片来来源)
 
 例子：
 ```
