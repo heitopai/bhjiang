@@ -1,6 +1,10 @@
 ---
 title: Lean4极简导读
 date: 2025-11-05
+tags:
+  - lean4
+categories:
+  - lean4
 math: true
 ---
 Lean是一种开源**编程语言**（lean4的4是版本，也有lean3等），

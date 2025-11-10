@@ -1,7 +1,7 @@
 # Change baseurl before deploy
 baseurl = "https://bhjiang.pages.dev"
-languageCode = "en-us"
-title = "Hugo Theme Stack Starter"
+languageCode = "zh-cn"
+title = "滨宏"
 
 # Theme i18n support
 # Available values: en, fr, id, ja, ko, pt-br, zh-cn, zh-tw, es, de, nl, it, th, el, uk, ar
