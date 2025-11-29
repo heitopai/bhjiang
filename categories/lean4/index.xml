@@ -1,0 +1,592 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?><rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom"><channel><title>Lean4 on 滨宏</title><link>https://bhjiang.pages.dev/categories/lean4/</link><description>Recent content in Lean4 on 滨宏</description><generator>Hugo -- gohugo.io</generator><language>zh-cn</language><lastBuildDate>Sat, 29 Nov 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://bhjiang.pages.dev/categories/lean4/index.xml" rel="self" type="application/rss+xml"/><item><title>基于Gemini 3的Lean4的一些理解</title><link>https://bhjiang.pages.dev/p/%E5%9F%BA%E4%BA%8Egemini-3%E7%9A%84lean4%E7%9A%84%E4%B8%80%E4%BA%9B%E7%90%86%E8%A7%A3/</link><pubDate>Sat, 29 Nov 2025 00:00:00 +0000</pubDate><guid>https://bhjiang.pages.dev/p/%E5%9F%BA%E4%BA%8Egemini-3%E7%9A%84lean4%E7%9A%84%E4%B8%80%E4%BA%9B%E7%90%86%E8%A7%A3/</guid><description>&lt;img src="https://bhjiang.pages.dev/p/%E5%9F%BA%E4%BA%8Egemini-3%E7%9A%84lean4%E7%9A%84%E4%B8%80%E4%BA%9B%E7%90%86%E8%A7%A3/lean4.png" alt="Featured image of post 基于Gemini 3的Lean4的一些理解" /&gt;&lt;p&gt;虽然说自己已经可以用lean4写一些数学证明了，但是关于lean4语言本身还缺乏一些基础的认识。本文是与Gemini 3对话的内容，受益良多。&lt;/p&gt;
+&lt;h2 id="在lean4中命题即类型证明命题即构造具有对应类型的项柯里-霍华德同构如何理解"&gt;在Lean4中命题即类型，证明命题即构造具有对应类型的项（柯里-霍华德同构）。如何理解
+&lt;/h2&gt;&lt;p&gt;这是一个非常深刻且美妙的概念。理解“命题即类型（Propositions as Types）”和“证明即程序（Proofs as Programs）”是掌握 Lean 4 的核心。&lt;/p&gt;
+&lt;p&gt;简单来说，在 Lean 中，&lt;strong&gt;写数学证明和写计算机程序本质上是同一件事&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;我们可以通过以下几个层次来拆解这个概念（即&lt;strong&gt;柯里-霍华德同构 Curry-Howard Isomorphism&lt;/strong&gt;）：&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3 id="1-核心类比表"&gt;1. 核心类比表
+&lt;/h3&gt;&lt;p&gt;首先，我们需要建立一个心理映射表：&lt;/p&gt;
+&lt;table&gt;
+&lt;thead&gt;
+&lt;tr&gt;
+&lt;th style="text-align: left"&gt;逻辑/数学领域 (Logic)&lt;/th&gt;
+&lt;th style="text-align: left"&gt;编程/类型论领域 (Programming)&lt;/th&gt;
+&lt;th style="text-align: left"&gt;Lean 4 中的体现&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;
+&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;命题&lt;/strong&gt; ($P$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;类型&lt;/strong&gt; ($T$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;code&gt;1 + 1 = 2&lt;/code&gt; 是一个类型&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;证明&lt;/strong&gt; ($p$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;该类型的一个实例/值&lt;/strong&gt; ($t$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;code&gt;rfl&lt;/code&gt; 是上述类型的一个值&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;蕴含&lt;/strong&gt; ($P \to Q$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;函数&lt;/strong&gt; (&lt;code&gt;P -&amp;gt; Q&lt;/code&gt;)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;一个接收 $P$ 并返回 $Q$ 的函数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;全称量词&lt;/strong&gt; ($\forall x, P(x)$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;依赖函数&lt;/strong&gt; (Dependent Function)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;接收参数 $x$，返回类型随 $x$ 变化的函数&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;且&lt;/strong&gt; ($P \land Q$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;积类型/结构体&lt;/strong&gt; (Product/Struct)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;包含两个字段的结构体：&lt;code&gt;(proof_of_P, proof_of_Q)&lt;/code&gt;&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;或&lt;/strong&gt; ($P \lor Q$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;和类型/枚举&lt;/strong&gt; (Sum/Enum)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;或者是 $P$ 的值，或者是 $Q$ 的值&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;假&lt;/strong&gt; ($\text{False}$)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;&lt;strong&gt;空类型&lt;/strong&gt; (Empty Type)&lt;/td&gt;
+&lt;td style="text-align: left"&gt;一个没有任何值的类型 (Void)&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;
+&lt;/table&gt;
+&lt;hr&gt;
+&lt;h3 id="2-详细解读"&gt;2. 详细解读
+&lt;/h3&gt;&lt;h4 id="第一层命题是什么propositions-as-types"&gt;第一层：命题是什么？（Propositions as Types）
+&lt;/h4&gt;&lt;p&gt;在传统编程中，类型通常是 &lt;code&gt;Int&lt;/code&gt;, &lt;code&gt;String&lt;/code&gt;, &lt;code&gt;List&lt;/code&gt;。
+在 Lean 中，数学陈述也是一种类型。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;例子&lt;/strong&gt;：&lt;code&gt;1 + 1 = 2&lt;/code&gt;
+在 Lean 中，这不只是一个布尔值（True/False），而是一个&lt;strong&gt;类型（Type）&lt;/strong&gt;。
+&lt;ul&gt;
+&lt;li&gt;如果这个命题是真的，那么这个类型里就&lt;strong&gt;存在&lt;/strong&gt;至少一个“值”（term）。&lt;/li&gt;
+&lt;li&gt;如果这个命题是假的（比如 &lt;code&gt;1 + 1 = 3&lt;/code&gt;），那么这个类型就是&lt;strong&gt;空的&lt;/strong&gt;，你造不出任何属于这个类型的值。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="第二层证明是什么proofs-as-terms"&gt;第二层：证明是什么？（Proofs as Terms）
+&lt;/h4&gt;&lt;p&gt;要证明一个命题，你只需要构造出属于该类型的一个&lt;strong&gt;值&lt;/strong&gt;。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;代码示例&lt;/strong&gt;：
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-lean" data-lang="lean"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;-- 定义一个类型（命题）：p 是 &amp;#34;1 + 1 = 2&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Prop&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;+&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- 提供一个值（证明）：proof_of_p 是类型 p 的一个实例&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- rfl 是 &amp;#34;reflexivity&amp;#34;（自反性）的缩写，是证明等式的基本构造子&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;proof_of_p&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;rfl&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;当你写下 &lt;code&gt;def&lt;/code&gt; 或 &lt;code&gt;theorem&lt;/code&gt; 时，编译器（Type Checker）会检查你等号右边的“值”是否真的属于冒号右边的“类型”。如果检查通过，证明就成立了。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="第三层蕴含即函数implication-as-function"&gt;第三层：蕴含即函数（Implication as Function）
+&lt;/h4&gt;&lt;p&gt;这是最精彩的部分。逻辑上的“如果 A 成立，那么 B 成立”（$A \to B$），在编程中就是一个&lt;strong&gt;函数&lt;/strong&gt;。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;逻辑角度&lt;/strong&gt;：给我一个 A 的证明，我就能推导出 B 的证明。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;编程角度&lt;/strong&gt;：给我一个类型为 &lt;code&gt;A&lt;/code&gt; 的参数，我就返回一个类型为 &lt;code&gt;B&lt;/code&gt; 的值。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;代码示例&lt;/strong&gt;：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-lean" data-lang="lean"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;-- 假设 P 和 Q 是两个命题&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;variable&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Prop&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- 这是一个证明：证明 &amp;#34;如果 P 且 Q 为真，那么 P 为真&amp;#34;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- 输入参数 h 的类型是 (P ∧ Q)，返回值类型是 P&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;theorem&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;extract_p&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;∧&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="bp"&gt;.&lt;/span&gt;&lt;span class="n"&gt;left&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 我们从结构体 h 中取出了左边的字段&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这完全等同于写一个函数，输入一个 Pair，返回 Pair 的第一个元素。&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="第四层全称量词与依赖类型forall-as-dependent-function"&gt;第四层：全称量词与依赖类型（$\forall$ as Dependent Function）
+&lt;/h4&gt;&lt;p&gt;全称量词 $\forall x, P(x)$ 的意思是：对于任意的 $x$，命题 $P(x)$ 都成立。&lt;/p&gt;
+&lt;p&gt;在编程中，这对应&lt;strong&gt;依赖函数（Dependent Function）&lt;/strong&gt;。这是一种特殊的函数，其&lt;strong&gt;返回值的类型取决于输入参数的值&lt;/strong&gt;。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;代码示例&lt;/strong&gt;：
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-lean" data-lang="lean"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;-- 证明：对于任意自然数 n，n = n&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- 这是一个函数，输入一个具体的数字 n，返回 &amp;#34;n = n&amp;#34; 这个类型的证明&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;theorem&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;self_equal&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Nat&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;rfl&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;调用 &lt;code&gt;self_equal 5&lt;/code&gt; 会得到一个类型为 &lt;code&gt;5 = 5&lt;/code&gt; 的证明（值）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h3 id="3-一个完整的编程即证明演示"&gt;3. 一个完整的“编程即证明”演示
+&lt;/h3&gt;&lt;p&gt;让我们来看看著名的 &lt;strong&gt;Modus Ponens&lt;/strong&gt;（肯定前件律）：
+逻辑表述：如果已知 $P \to Q$ 且已知 $P$，则可以推出 $Q$。&lt;/p&gt;
+&lt;p&gt;在 Lean 中，这只是简单的&lt;strong&gt;函数调用&lt;/strong&gt;：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-lean" data-lang="lean"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;variable&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Prop&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- mp 是函数名&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- h1 是一个函数 (P -&amp;gt; Q)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- h2 是一个值 (P)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- 我们的目标是构造一个 Q 类型的值&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;mp&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;h1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;→&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;h2&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;h1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;h2&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 将参数 h2 传给函数 h1，得到的结果就是 Q&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;strong&gt;理解关键&lt;/strong&gt;：
+你不是在“寻找”真理，你是在“组装”数据。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;既然 &lt;code&gt;h1&lt;/code&gt; 是一个把 $P$ 变 $Q$ 的转换器；&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;h2&lt;/code&gt; 是原料 $P$；&lt;/li&gt;
+&lt;li&gt;那么 &lt;code&gt;h1 h2&lt;/code&gt; 自然就是产品 $Q$。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="4-prop-与-type-的区别"&gt;4. Prop 与 Type 的区别
+&lt;/h3&gt;&lt;p&gt;虽然我们说命题即类型，但在 Lean 4 中，它们处于不同的“宇宙”层级：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Type (Sort 1)&lt;/strong&gt;: 用于数据和计算。比如 &lt;code&gt;Nat&lt;/code&gt;, &lt;code&gt;List Int&lt;/code&gt;。我们要区分 &lt;code&gt;0&lt;/code&gt; 和 &lt;code&gt;1&lt;/code&gt;，因为它们在计算上是不同的数据。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Prop (Sort 0)&lt;/strong&gt;: 用于逻辑命题。比如 &lt;code&gt;1 = 1&lt;/code&gt;, &lt;code&gt;2 &amp;gt; 1&lt;/code&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;为什么区分？（证明无关性 Proof Irrelevance）&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;对于数据（Type），我们关心它&lt;strong&gt;是哪个值&lt;/strong&gt;（&lt;code&gt;3&lt;/code&gt; 和 &lt;code&gt;4&lt;/code&gt; 是不同的）。&lt;/li&gt;
+&lt;li&gt;对于命题（Prop），我们只关心它&lt;strong&gt;是否有证明&lt;/strong&gt;，而不关心&lt;strong&gt;证明长什么样&lt;/strong&gt;。
+&lt;ul&gt;
+&lt;li&gt;例如：证明 &lt;code&gt;2 + 2 = 4&lt;/code&gt;，你可以用手指头数，也可以用皮亚诺公理推导。在 Lean 眼里，这两个证明是等价的，只要证明了它是真的，它们就是相等的。运行时，Prop 类型的值会被擦除（即不需要占用内存），因为程序跑起来只需要知道逻辑是对的，不需要带着证明跑。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="总结"&gt;总结
+&lt;/h3&gt;&lt;p&gt;在 Lean 4 中理解这句话，你需要转变思维：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;不要把证明看作文本推导&lt;/strong&gt;，而要看作&lt;strong&gt;拼积木（构造数据）&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;定理（Theorem）&lt;/strong&gt; 就是 &lt;strong&gt;函数签名（Function Signature）&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;证明过程（Proof）&lt;/strong&gt; 就是 &lt;strong&gt;函数体（Function Body）&lt;/strong&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Q.E.D.&lt;/strong&gt; 就是 &lt;strong&gt;编译通过（Type Check Passed）&lt;/strong&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;当你被要求证明 $A \to B$ 时，不要想“为什么 A 能推出 B”，而要想“我手里有个 A 类型的数据，怎么把它加工成 B 类型的数据？”&lt;/p&gt;
+&lt;h2 id="继续讲讲宇宙层级"&gt;继续讲讲“宇宙”层级
+&lt;/h2&gt;&lt;p&gt;这是一个非常重要的问题。如果说“命题即类型”是 Lean 的骨架，那么**宇宙（Universes）**就是防止这个骨架坍塌的地基。&lt;/p&gt;
+&lt;p&gt;在 Lean 中，你可能会经常看到编译报错提到 &lt;code&gt;Type u&lt;/code&gt;、&lt;code&gt;Sort u&lt;/code&gt; 或者 &lt;code&gt;universe level&lt;/code&gt;，这就是涉及到宇宙层级了。&lt;/p&gt;
+&lt;p&gt;我们通过三个问题来理解它：&lt;strong&gt;是什么？为什么？怎么用？&lt;/strong&gt;&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3 id="1-什么是宇宙universe"&gt;1. 什么是宇宙（Universe）？
+&lt;/h3&gt;&lt;p&gt;回想一下我们之前的定义：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;5&lt;/code&gt; 是一个值，它的类型是 &lt;code&gt;Nat&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;rfl&lt;/code&gt; 是一个证明，它的类型是 &lt;code&gt;1 = 1&lt;/code&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;那么问题来了：&lt;strong&gt;&lt;code&gt;Nat&lt;/code&gt; 的类型是什么？&lt;code&gt;1 = 1&lt;/code&gt; 的类型又是什么？&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;在 Lean 中，类型本身也是一种“东西”，所以&lt;strong&gt;类型也有类型&lt;/strong&gt;。我们把“类型的类型”称为 &lt;strong&gt;宇宙（Universe）&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;Lean 的世界是一个无限向上的阶梯：&lt;/p&gt;
+&lt;h4 id="第-0-级值-terms"&gt;第 0 级：值 (Terms)
+&lt;/h4&gt;&lt;p&gt;这是具体的数值或证明对象。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;5&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;&amp;quot;Hello&amp;quot;&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;[]&lt;/code&gt; (空列表)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="第-1-级类型-types"&gt;第 1 级：类型 (Types)
+&lt;/h4&gt;&lt;p&gt;这是第 0 级东西的容器。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Nat&lt;/code&gt; （包含 5）&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;String&lt;/code&gt; （包含 &amp;ldquo;Hello&amp;rdquo;）&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;List Nat&lt;/code&gt; （包含 []）&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="第-2-级类型的类型-type-of-types"&gt;第 2 级：类型的类型 (Type of Types)
+&lt;/h4&gt;&lt;p&gt;这是第 1 级东西的容器。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;在 Lean 中，&lt;code&gt;Nat&lt;/code&gt; 的类型叫做 &lt;code&gt;Type&lt;/code&gt; (实际上是 &lt;code&gt;Type 0&lt;/code&gt;)。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="第-3-级及以上"&gt;第 3 级及以上
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Type 0&lt;/code&gt; 的类型是 &lt;code&gt;Type 1&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Type 1&lt;/code&gt; 的类型是 &lt;code&gt;Type 2&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;&amp;hellip;以此类推，直到无穷。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;用代码验证一下（你可以在 VS Code 中输入 &lt;code&gt;#check&lt;/code&gt; 查看）：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-lean" data-lang="lean"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="bp"&gt;#&lt;/span&gt;&lt;span class="n"&gt;check&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 输出: 5 : Nat&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="bp"&gt;#&lt;/span&gt;&lt;span class="n"&gt;check&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Nat&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 输出: Nat : Type&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="bp"&gt;#&lt;/span&gt;&lt;span class="n"&gt;check&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Type&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 输出: Type : Type 1&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="bp"&gt;#&lt;/span&gt;&lt;span class="n"&gt;check&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Type&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 输出: Type 1 : Type 2&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;hr&gt;
+&lt;h3 id="2-prop-和-type两个平行的起点"&gt;2. Prop 和 Type：两个平行的起点
+&lt;/h3&gt;&lt;p&gt;虽然阶梯是无限向上的，但 Lean 的底层（地基）其实分成了&lt;strong&gt;两支&lt;/strong&gt;。Lean 内部使用关键字 &lt;code&gt;Sort&lt;/code&gt; 来统一表示这两个分支。&lt;/p&gt;
+&lt;h4 id="分支一逻辑世界-prop--sort-0"&gt;分支一：逻辑世界 (&lt;code&gt;Prop&lt;/code&gt; / &lt;code&gt;Sort 0&lt;/code&gt;)
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;定义&lt;/strong&gt;：这是所有&lt;strong&gt;命题&lt;/strong&gt;居住的宇宙。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;别名&lt;/strong&gt;：&lt;code&gt;Prop&lt;/code&gt; 实际上就是 &lt;code&gt;Sort 0&lt;/code&gt; 的语法糖。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;特点&lt;/strong&gt;：
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;1 = 1&lt;/code&gt; 的类型是 &lt;code&gt;Prop&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;2 &amp;gt; 3&lt;/code&gt; 的类型是 &lt;code&gt;Prop&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;证明无关性&lt;/strong&gt;：在这个层级里，我们不关心“值”（证明）长什么样，只关心有没有。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;运行时擦除&lt;/strong&gt;：编译成二进制程序时，&lt;code&gt;Prop&lt;/code&gt; 里的所有内容都会被删掉，不占空间。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="分支二数据世界-type--sort-1-sort-2"&gt;分支二：数据世界 (&lt;code&gt;Type&lt;/code&gt; / &lt;code&gt;Sort 1&lt;/code&gt;, &lt;code&gt;Sort 2&lt;/code&gt;&amp;hellip;)
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;定义&lt;/strong&gt;：这是所有&lt;strong&gt;数据结构&lt;/strong&gt;居住的宇宙。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;别名&lt;/strong&gt;：
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Type 0&lt;/code&gt; 是 &lt;code&gt;Sort 1&lt;/code&gt; 的语法糖（通常简写为 &lt;code&gt;Type&lt;/code&gt;）。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Type 1&lt;/code&gt; 是 &lt;code&gt;Sort 2&lt;/code&gt; 的语法糖。&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;Type u&lt;/code&gt; 是 &lt;code&gt;Sort (u+1)&lt;/code&gt; 的语法糖。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;特点&lt;/strong&gt;：&lt;code&gt;Nat&lt;/code&gt;、&lt;code&gt;Bool&lt;/code&gt;、&lt;code&gt;List&lt;/code&gt; 都在这里。这里的“值”对计算结果很重要，不能删。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h3 id="3-为什么要分层级罗素悖论"&gt;3. 为什么要分层级？（罗素悖论）
+&lt;/h3&gt;&lt;p&gt;你可能会问：&lt;em&gt;“为什么要搞这么多 &lt;code&gt;Type 0&lt;/code&gt;, &lt;code&gt;Type 1&lt;/code&gt;&amp;hellip; 为什么不直接规定 &lt;code&gt;Type&lt;/code&gt; 的类型就是 &lt;code&gt;Type&lt;/code&gt; 自己呢？”&lt;/em&gt;&lt;/p&gt;
+&lt;p&gt;如果允许 &lt;code&gt;Type : Type&lt;/code&gt;（类型包含其自身），数学系统就会崩溃。这对应著名的 &lt;strong&gt;罗素悖论 (Russell&amp;rsquo;s Paradox)&lt;/strong&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;通俗解释：&lt;/strong&gt;
+想象有一本“书目大全”，它列出了图书馆里所有的书。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;问题：这就引出了一个悖论，这本“书目大全”应该把它自己列进去吗？&lt;/li&gt;
+&lt;li&gt;如果允许“集合包含自身”，你就可以构造一个“所有不包含自己的集合的集合”。这就导致了逻辑矛盾（如果是，则不是；如果不是，则是）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;为了避免这个逻辑炸弹，Lean（以及现代类型论）强制规定：
+&lt;strong&gt;容器必须比它里面的东西高一级。&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;code&gt;Nat&lt;/code&gt; 在 &lt;code&gt;Type 0&lt;/code&gt; 里。&lt;/li&gt;
+&lt;li&gt;包含 &lt;code&gt;Nat&lt;/code&gt; 的 &lt;code&gt;List&lt;/code&gt;（作为一个类型构造器）也通常在 &lt;code&gt;Type 0&lt;/code&gt; 层面操作。&lt;/li&gt;
+&lt;li&gt;但是，如果你想定义一个包含“所有类型”的列表 &lt;code&gt;[Nat, Bool, String]&lt;/code&gt;，这个列表本身的类型就不能是 &lt;code&gt;Type 0&lt;/code&gt; 了，它必须升级到 &lt;code&gt;Type 1&lt;/code&gt;。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h3 id="4-宇宙多态-universe-polymorphism"&gt;4. 宇宙多态 (Universe Polymorphism)
+&lt;/h3&gt;&lt;p&gt;在写代码时，为了避免麻烦，我们不想为 &lt;code&gt;Type 0&lt;/code&gt; 写一个 &lt;code&gt;List&lt;/code&gt;，又为 &lt;code&gt;Type 1&lt;/code&gt; 写一个 &lt;code&gt;List&lt;/code&gt;。我们希望代码是通用的。&lt;/p&gt;
+&lt;p&gt;这就有了 &lt;strong&gt;宇宙变量 (Universe Variables)&lt;/strong&gt;，通常写作 &lt;code&gt;u&lt;/code&gt;, &lt;code&gt;v&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;当你查看 Lean 标准库中 &lt;code&gt;List&lt;/code&gt; 的定义时，你会发现它是这样写的（简化版）：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;span class="lnt"&gt;4
+&lt;/span&gt;&lt;span class="lnt"&gt;5
+&lt;/span&gt;&lt;span class="lnt"&gt;6
+&lt;/span&gt;&lt;span class="lnt"&gt;7
+&lt;/span&gt;&lt;span class="lnt"&gt;8
+&lt;/span&gt;&lt;span class="lnt"&gt;9
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-lean" data-lang="lean"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;-- u 是一个占位符，可以是 0, 1, 2...&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;universe&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;u&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- List 接受一个类型 α&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- 这个 α 位于宇宙 u 中 (Type u)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- 返回的 List α 也位于宇宙 u 中&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="kn"&gt;inductive&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;α&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Type&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;u&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Type&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;u&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kn"&gt;where&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;|&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;nil&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;α&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;|&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;cons&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;α&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;→&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;α&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;→&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;List&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;α&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;这意味着：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;如果 &lt;code&gt;α&lt;/code&gt; 是 &lt;code&gt;Nat&lt;/code&gt; (Type 0)，那么 &lt;code&gt;List Nat&lt;/code&gt; 也是 &lt;code&gt;Type 0&lt;/code&gt;。&lt;/li&gt;
+&lt;li&gt;如果 &lt;code&gt;α&lt;/code&gt; 是 &lt;code&gt;Type&lt;/code&gt; (Type 1)，那么 &lt;code&gt;List Type&lt;/code&gt; 就是 &lt;code&gt;Type 1&lt;/code&gt;。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;这就是“宇宙多态”：你的函数或类型可以在任意层级的宇宙上工作。&lt;/strong&gt;&lt;/p&gt;
+&lt;h3 id="5-总结如何理解这张图谱"&gt;5. 总结：如何理解这张图谱
+&lt;/h3&gt;&lt;p&gt;把 Lean 的类型系统想象成一个巨大的公寓楼：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;地下室 (&lt;code&gt;Sort 0&lt;/code&gt; / &lt;code&gt;Prop&lt;/code&gt;)&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;住着：&lt;code&gt;1=1&lt;/code&gt;, &lt;code&gt;Exists x, ...&lt;/code&gt; 等命题。&lt;/li&gt;
+&lt;li&gt;特点：这层楼也是一种类型，但这里的东西主要用于“验证”，不参与实际的“物理构建”（运行时被擦除）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;一楼 (&lt;code&gt;Sort 1&lt;/code&gt; / &lt;code&gt;Type 0&lt;/code&gt;)&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;住着：&lt;code&gt;Nat&lt;/code&gt;, &lt;code&gt;String&lt;/code&gt;, &lt;code&gt;Bool&lt;/code&gt; 等常见数据类型。&lt;/li&gt;
+&lt;li&gt;这是我们写普通程序最常待的地方。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;二楼 (&lt;code&gt;Sort 2&lt;/code&gt; / &lt;code&gt;Type 1&lt;/code&gt;)&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;住着：&lt;code&gt;Type 0&lt;/code&gt; 本身，以及包含了一楼住户的那些“元类型”（比如 &lt;code&gt;List Type&lt;/code&gt;）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;顶楼 (&lt;code&gt;Type u&lt;/code&gt;)&lt;/strong&gt;：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;是一个变量，允许你编写同一种逻辑，适配每一层楼。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;&lt;strong&gt;一句话心法：&lt;/strong&gt;
+当你写代码时，如果是普通数据，就在 &lt;code&gt;Type&lt;/code&gt;；如果是逻辑证明，就在 &lt;code&gt;Prop&lt;/code&gt;。只有当你在玩弄“类型本身”（比如写元编程，或者定义极其抽象的范畴论结构）时，才需要关心 &lt;code&gt;Type 1&lt;/code&gt; 及以上的层级。&lt;/p&gt;
+&lt;h2 id="讲讲tactics"&gt;讲讲tactics
+&lt;/h2&gt;&lt;p&gt;如果说“命题即类型”是 Lean 的&lt;strong&gt;物理定律&lt;/strong&gt;（底层原理），那么 &lt;strong&gt;Tactics（策略）&lt;/strong&gt; 就是 Lean 的&lt;strong&gt;工程脚手架&lt;/strong&gt;（高层工具）。&lt;/p&gt;
+&lt;p&gt;到目前为止，我们一直在说“证明就是写程序”。但在实际数学中，直接写出那个最终的“程序（Term）”通常是非常困难且反直觉的。&lt;/p&gt;
+&lt;p&gt;Tactics 的出现，是为了让我们能用&lt;strong&gt;指令式&lt;/strong&gt;的方法，一步步地指导 Lean 构造出那个复杂的证明项。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3 id="1-为什么我们需要-tactics"&gt;1. 为什么我们需要 Tactics？
+&lt;/h3&gt;&lt;p&gt;假设你要证明一个复杂的数学定理。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Term Mode（项模式/硬写代码）&lt;/strong&gt;：
+就像你必须一次性把整个复杂的函数体写出来，不能有任何语法错误，脑子里要以此维护所有的变量状态。这就像用汇编语言写大型软件。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;优点&lt;/em&gt;：精确，底层。&lt;/li&gt;
+&lt;li&gt;&lt;em&gt;缺点&lt;/em&gt;：对于长证明，人类的大脑很难直接构造出那个嵌套了十几层的 Lambda 表达式。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Tactic Mode（策略模式/交互式）&lt;/strong&gt;：
+Lean 提供了一个交互环境。你不需要直接给出答案，而是告诉 Lean：“先处理这个假设”，“把那个定理套用一下”，“把等式左边化简一下”。Lean 会实时反馈你现在的状态。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;优点&lt;/em&gt;：交互式，不仅是验证，更是&lt;strong&gt;辅助探索&lt;/strong&gt;。分解问题，各个击破。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h3 id="2-核心机制tactic-mode-是如何工作的"&gt;2. 核心机制：Tactic Mode 是如何工作的？
+&lt;/h3&gt;&lt;p&gt;在 Lean 中，当你输入关键字 &lt;strong&gt;&lt;code&gt;by&lt;/code&gt;&lt;/strong&gt; 时，你就从“写代码模式”切换到了“策略模式”。&lt;/p&gt;
+&lt;h4 id="心理模型填坑游戏"&gt;心理模型：填坑游戏
+&lt;/h4&gt;&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;目标（Goal）&lt;/strong&gt;：
+Lean 会在这个类型的定义处挖一个&lt;strong&gt;坑（Hole，学名 Metavariable）&lt;/strong&gt;。你的任务就是填上这个坑。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;状态（Tactic State）&lt;/strong&gt;：
+VS Code 右侧会显示当前的&lt;strong&gt;证明状态&lt;/strong&gt;。它长这样：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-text" data-lang="text"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;h1 : P -- 你的手牌（上下文/假设）
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;h2 : P → Q
+&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;⊢ Q -- 你的目标（要构造的类型）
+&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;code&gt;⊢&lt;/code&gt; (Turnstile) 符号：左边是你拥有的，右边是你需要的。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;指令（Commands）&lt;/strong&gt;：
+你每输入一个 tactic（如 &lt;code&gt;intro&lt;/code&gt;, &lt;code&gt;apply&lt;/code&gt;），Lean 就会根据指令修改当前的 State，直到目标被解决。&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;幕后（Elaboration）&lt;/strong&gt;：
+当你写完 &lt;code&gt;by ...&lt;/code&gt; 块时，Lean 的编译器（Elaborator）会自动把你的这一堆指令翻译回底层的 Lambda 表达式（Term）。&lt;strong&gt;机器只认 Term，Tactics 是给人用的。&lt;/strong&gt;&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;hr&gt;
+&lt;h3 id="3-常见-tactics-与底层-term-的对应关系"&gt;3. 常见 Tactics 与底层 Term 的对应关系
+&lt;/h3&gt;&lt;p&gt;理解 Tactics 的最好方法，是看它们对应什么底层代码（柯里-霍华德同构的体现）。&lt;/p&gt;
+&lt;p&gt;假设我们要证明 $P \to Q \to P$。&lt;/p&gt;
+&lt;h4 id="场景-1引入假设-intro"&gt;场景 1：引入假设 (&lt;code&gt;intro&lt;/code&gt;)
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Tactic&lt;/strong&gt;: &lt;code&gt;intro h&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;对应 Term&lt;/strong&gt;: Lambda 抽象 &lt;code&gt;fun h =&amp;gt; ...&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;作用&lt;/strong&gt;：如果目标是 &lt;code&gt;P → Q&lt;/code&gt;，&lt;code&gt;intro h&lt;/code&gt; 会把 &lt;code&gt;P&lt;/code&gt; 移到左边的上下文里，把目标变成 &lt;code&gt;Q&lt;/code&gt;。
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;直觉&lt;/em&gt;：为了证明“如果 P 则 Q”，我们先假设 P 成立（记为 h），然后去证明 Q。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="场景-2应用定理-apply"&gt;场景 2：应用定理 (&lt;code&gt;apply&lt;/code&gt;)
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Tactic&lt;/strong&gt;: &lt;code&gt;apply f&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;对应 Term&lt;/strong&gt;: 函数调用 &lt;code&gt;f ?&lt;/code&gt; (待定参数)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;作用&lt;/strong&gt;：&lt;strong&gt;逆向推理&lt;/strong&gt;。如果目标是 &lt;code&gt;Q&lt;/code&gt;，而你有一个函数 &lt;code&gt;f : P → Q&lt;/code&gt;，&lt;code&gt;apply f&lt;/code&gt; 会把目标变成 &lt;code&gt;P&lt;/code&gt;。
+&lt;ul&gt;
+&lt;li&gt;&lt;em&gt;直觉&lt;/em&gt;：为了得到 Q，因为我知道 f 能推出 Q，所以我只要能搞定 f 需要的原料 P 就行了。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="场景-3精确匹配-exact"&gt;场景 3：精确匹配 (&lt;code&gt;exact&lt;/code&gt;)
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Tactic&lt;/strong&gt;: &lt;code&gt;exact h&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;对应 Term&lt;/strong&gt;: 直接填入值 &lt;code&gt;h&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;作用&lt;/strong&gt;：如果目标是 &lt;code&gt;P&lt;/code&gt;，而你手头正好有一个 &lt;code&gt;h : P&lt;/code&gt;，你就大喊 &lt;code&gt;exact h&lt;/code&gt;，证明结束。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h4 id="场景-4结构分解-cases--rcases"&gt;场景 4：结构分解 (&lt;code&gt;cases&lt;/code&gt; / &lt;code&gt;rcases&lt;/code&gt;)
+&lt;/h4&gt;&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Tactic&lt;/strong&gt;: &lt;code&gt;cases h&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;对应 Term&lt;/strong&gt;: 模式匹配 &lt;code&gt;match h with ...&lt;/code&gt;&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;作用&lt;/strong&gt;：如果你有一个“或”（$A \lor B$）或者“且”（$A \land B$）类型的假设，把它拆解开。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;hr&gt;
+&lt;h3 id="4-实例演示两种模式的对比"&gt;4. 实例演示：两种模式的对比
+&lt;/h3&gt;&lt;p&gt;让我们证明：&lt;strong&gt;如果 P 且 Q 成立，那么 P 成立。&lt;/strong&gt;
+类型为：&lt;code&gt;P ∧ Q → P&lt;/code&gt;&lt;/p&gt;
+&lt;h4 id="方式-aterm-mode-直接构造"&gt;方式 A：Term Mode (直接构造)
+&lt;/h4&gt;&lt;p&gt;你需要非常清楚 Pair 类型的内部结构。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt;1
+&lt;/span&gt;&lt;span class="lnt"&gt;2
+&lt;/span&gt;&lt;span class="lnt"&gt;3
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-lean" data-lang="lean"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;example&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Prop&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;∧&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;→&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;fun&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;=&amp;gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="bp"&gt;.&lt;/span&gt;&lt;span class="n"&gt;left&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="c1"&gt;-- 解释：这是一个匿名函数，接收 h，返回 h 的左分量&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;h4 id="方式-btactic-mode-交互式"&gt;方式 B：Tactic Mode (交互式)
+&lt;/h4&gt;&lt;p&gt;这是更像“数学证明过程”的写法。&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-lean" data-lang="lean"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="kn"&gt;example&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="kt"&gt;Prop&lt;/span&gt;&lt;span class="o"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;∧&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Q&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;→&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;P&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;:&lt;/span&gt;&lt;span class="bp"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;by&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 状态： ⊢ P ∧ Q → P&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;intro&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 状态： h : P ∧ Q &lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- ⊢ P&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;cases&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;h&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;with&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;|&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;intro&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;hp&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;hq&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="bp"&gt;=&amp;gt;&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 状态： hp : P, hq : Q&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- ⊢ P&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;exact&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;hp&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- 状态： No goals. 证明完成。&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;&lt;strong&gt;发生了什么？&lt;/strong&gt;
+Lean 实际上把你写的那堆 &lt;code&gt;by ...&lt;/code&gt; 代码，悄悄编译成了：
+&lt;code&gt;fun h =&amp;gt; match h with | intro hp hq =&amp;gt; hp&lt;/code&gt;
+这和方式 A 的本质是一样的，但方式 B 每一步都有提示。&lt;/p&gt;
+&lt;hr&gt;
+&lt;h3 id="5-高级-tactics自动化武器"&gt;5. 高级 Tactics：自动化武器
+&lt;/h3&gt;&lt;p&gt;Lean 4 的强大之处在于它不仅有手动挡（&lt;code&gt;intro&lt;/code&gt;, &lt;code&gt;apply&lt;/code&gt;），还有自动挡。因为 Tactics 本质上是 Lean 的元程序（Metaprograms），它们可以执行搜索算法。&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;rw&lt;/code&gt; (rewrite)&lt;/strong&gt;: 等量代换。如果你知道 &lt;code&gt;a = b&lt;/code&gt;，可以用它把所有的 &lt;code&gt;a&lt;/code&gt; 换成 &lt;code&gt;b&lt;/code&gt;。这在底层对应复杂的等式传输原理（&lt;code&gt;Eq.subst&lt;/code&gt;），手写非常痛苦，用 &lt;code&gt;rw&lt;/code&gt; 极其爽快。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;simp&lt;/code&gt; (simplify)&lt;/strong&gt;: 简化器。它是 Lean 的扫地机器人。它有一个巨大的数据库，里面存了成千上万条化简规则（比如 &lt;code&gt;x + 0 = x&lt;/code&gt;, &lt;code&gt;a ∧ True ↔ a&lt;/code&gt;）。你输入 &lt;code&gt;simp&lt;/code&gt;，它就自动尝试化简目标。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;linarith&lt;/code&gt;&lt;/strong&gt;: 线性算术求解器。如果你有 &lt;code&gt;x &amp;lt; y&lt;/code&gt; 和 &lt;code&gt;y &amp;lt; z&lt;/code&gt;，目标是 &lt;code&gt;x &amp;lt; z&lt;/code&gt;，你不需要手动引用传递性，直接输入 &lt;code&gt;linarith&lt;/code&gt;，它会自动搜索不等式证明。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3 id="6-总结如何看待-tactics"&gt;6. 总结：如何看待 Tactics
+&lt;/h3&gt;&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;思维的缓冲&lt;/strong&gt;：Term Mode 是“自顶向下”的构造（必须先想好整体结构），Tactic Mode 允许“自底向上”或“逆向”的探索。&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;可读性权衡&lt;/strong&gt;：
+&lt;ul&gt;
+&lt;li&gt;Term Mode 的代码短，但难懂（全是符号）。&lt;/li&gt;
+&lt;li&gt;Tactic Mode 的代码长，但记录了思维过程（先引入，再拆解，再应用&amp;hellip;）。&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Lean 4 的特色&lt;/strong&gt;：在 Lean 4 中，Tactics 本身也是用 Lean 语言写的！这意味着你可以自己写 Tactics 来帮自己证明。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;&lt;strong&gt;一句话总结：&lt;/strong&gt;
+&lt;strong&gt;Term 是汇编指令，Tactic 是高级语言脚本。&lt;/strong&gt; 我们用 Tactic 指挥 Lean 去生成那些繁琐的 Term，从而完成柯里-霍华德同构要求的“构造证明值”的任务。&lt;/p&gt;</description></item><item><title>Lean4极简导读</title><link>https://bhjiang.pages.dev/p/lean4%E6%9E%81%E7%AE%80%E5%AF%BC%E8%AF%BB/</link><pubDate>Wed, 05 Nov 2025 00:00:00 +0000</pubDate><guid>https://bhjiang.pages.dev/p/lean4%E6%9E%81%E7%AE%80%E5%AF%BC%E8%AF%BB/</guid><description>&lt;img src="https://bhjiang.pages.dev/p/lean4%E6%9E%81%E7%AE%80%E5%AF%BC%E8%AF%BB/lean4.png" alt="Featured image of post Lean4极简导读" /&gt;&lt;p&gt;Lean是一种开源&lt;strong&gt;编程语言&lt;/strong&gt;（lean4的4是版本，也有lean3等），
+能用来形式化数学，用代码来表达数学命题和证明，以方便验证证明是否正确，官网 &lt;a class="link" href="https://lean-lang.org/" target="_blank" rel="noopener"
+&gt;https://lean-lang.org/&lt;/a&gt; (博客界面图片来来源)&lt;/p&gt;
+&lt;p&gt;例子：&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;div class="chroma"&gt;
+&lt;table class="lntable"&gt;&lt;tr&gt;&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code&gt;&lt;span class="lnt"&gt; 1
+&lt;/span&gt;&lt;span class="lnt"&gt; 2
+&lt;/span&gt;&lt;span class="lnt"&gt; 3
+&lt;/span&gt;&lt;span class="lnt"&gt; 4
+&lt;/span&gt;&lt;span class="lnt"&gt; 5
+&lt;/span&gt;&lt;span class="lnt"&gt; 6
+&lt;/span&gt;&lt;span class="lnt"&gt; 7
+&lt;/span&gt;&lt;span class="lnt"&gt; 8
+&lt;/span&gt;&lt;span class="lnt"&gt; 9
+&lt;/span&gt;&lt;span class="lnt"&gt;10
+&lt;/span&gt;&lt;span class="lnt"&gt;11
+&lt;/span&gt;&lt;span class="lnt"&gt;12
+&lt;/span&gt;&lt;span class="lnt"&gt;13
+&lt;/span&gt;&lt;span class="lnt"&gt;14
+&lt;/span&gt;&lt;span class="lnt"&gt;15
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;
+&lt;td class="lntd"&gt;
+&lt;pre tabindex="0" class="chroma"&gt;&lt;code class="language-mysql" data-lang="mysql"&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="c1"&gt;-- A prime is a number larger than 1 with no trivial divisors -/
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="n"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;IsPrime&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;Nat&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∧&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∀&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;→&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;→&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;¬&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∣&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt;&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="c1"&gt;-- Every number larger than 1 has a prime factor -/
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="n"&gt;theorem&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;exists_prime_factor&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∀&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;→&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∃&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;IsPrime&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∧&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∣&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;by&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;intro&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;h1&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- Either `n` is prime...
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;by_cases&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;hprime&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;IsPrime&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;·&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;grind&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;Nat&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dvd_refl&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="c1"&gt;-- ... or it has a non-trivial divisor with a prime factor
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="c1"&gt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;·&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;obtain&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;⟨&lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="err"&gt;⟩&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∃&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∧&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;&amp;lt;&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∧&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;∣&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;n&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="k"&gt;by&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;simp_all&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;IsPrime&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;obtain&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="err"&gt;⟨&lt;/span&gt;&lt;span class="n"&gt;p&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;_&lt;/span&gt;&lt;span class="err"&gt;⟩&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;exists_prime_factor&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;k&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="k"&gt;by&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;grind&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;span class="line"&gt;&lt;span class="cl"&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="n"&gt;grind&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;Nat&lt;/span&gt;&lt;span class="p"&gt;.&lt;/span&gt;&lt;span class="n"&gt;dvd_trans&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="w"&gt;
+&lt;/span&gt;&lt;/span&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;
+&lt;/div&gt;
+&lt;/div&gt;&lt;p&gt;上述lean4代码说了这样一件事：&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;def 定义了什么是素数, ∧ ∀ → ¬这些符号都和数学的通常的含义一样&lt;/li&gt;
+&lt;li&gt;theorem 定理的名字是exists_prime_factor，这个定理证明了每个大于1的自然数都有一个素因子。by后面的是证明过程，intro，by_cases，grind，obtain这些叫做Tactic，叫什么不重要，intro的意思大概是引入固定的n，h1是n满足1 &amp;lt; n这一事实，我们用自然语言证明这个结论也要类似的说对于给定n&amp;gt;1，所以很类似。其他的，不说了，这里是极简导读&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;上述代码可以直接在 &lt;a class="link" href="https://live.lean-lang.org/" target="_blank" rel="noopener"
+&gt;https://live.lean-lang.org/&lt;/a&gt; 运行，显示No goals以及No messages就说明证明没问题。点击代码的不同位置可以看到右侧的不同信息，可以体验一下，具体什么意思下一篇介绍。&lt;/p&gt;
+&lt;h2 id="入门建议"&gt;入门建议
+&lt;/h2&gt;&lt;ul&gt;
+&lt;li&gt;博主就是通过官方的自然数游戏入门 &lt;a class="link" href="https://adam.math.hhu.de/#/g/leanprover-community/nng4" target="_blank" rel="noopener"
+&gt;https://adam.math.hhu.de/#/g/leanprover-community/nng4&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;文档因人而异看&lt;/li&gt;
+&lt;li&gt;社区的话多逛Mathlib（大型数学定义和定理库）和Lean Community Zulip（答疑，分享等）吧&lt;/li&gt;
+&lt;/ul&gt;</description></item></channel></rss>
