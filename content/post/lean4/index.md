@@ -39,7 +39,6 @@ theorem exists_prime_factor :
 
 ## 入门建议
 
-- 我自己就是通过官方的自然数游戏入门 https://adam.math.hhu.de/#/g/leanprover-community/nng4 
+- 博主就是通过官方的自然数游戏入门 https://adam.math.hhu.de/#/g/leanprover-community/nng4 
 - 文档因人而异看
 - 社区的话多逛Mathlib（大型数学定义和定理库）和Lean Community Zulip（答疑，分享等）吧
-- 想本地安装lean4的话一般很麻烦
